@@ -20,7 +20,7 @@ Help check-in chromebooks and chargers along with adding a note.
  - **y,n,Cracked screen** // the serial number matches the stated one, a charger is present, and your note states 'Cracked screen'
  - **y,y** // serial number matches and a charger is present. No note.
  - **n,n** // serial number doesn't match and np charger is present. No note.
-4. Done! If the repeat option is set to true in Code.gs, you'll be back at step 2.
+4. Done! If the repeat option is set to true in Code.gs, you'll be back at step 2 so you can work on the next chromebook. (break out of this by pressing cancel on any prompt).
 
 ### Power-user shortcuts for #3
 - *enter nothing* // Serial number matches and charger is present. No note.
