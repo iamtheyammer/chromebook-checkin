@@ -23,7 +23,13 @@ function checkIn() {
   var emailColumn = 'A';
   // the column that holds email addresses
   
-  var sheetName = 'Sheet1'
+  var serialColumn = '0'
+  // the column # that holds serial numbers, and subtract one, ex. a=0, c=2, z=25
+  
+  var homeroomColumn = '1'
+  // the column # that holds homerooms, and subtract one, ex. a=0, c=2, z=25
+  
+  var sheetName = sheetName
   // the name of the sheet that holds the data.
   
   var numRows = 123;
@@ -31,6 +37,12 @@ function checkIn() {
   
   var repeat = false;
   // do you want the script to auto-repeat unless you press cancel?
+  
+  var simple = false;
+  // makes the script 'hand-hold' users-- takes more time and is less efficient, read the README.
+  
+  var printColumns = ['C', 'E'];
+  // looking for the columns in the order: Chromebook, Charger, Notes, example ['A', 'C']
   
   // END OF SETTINGS
   
@@ -56,46 +68,83 @@ function checkIn() {
   }
   
   var row = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange('A' + i + ':N' + i).getValues(); //grab the row with the correct email
-  
-  // THESE WILL NEED TO BE CHANGED DEPENDING ON YOUR SHEET SETUP.
-  // THEY SHOULD BE THE COLUMN THAT HOLDS SERIAL NUMBERS/EMAILS, BUT AS A NUMBER STARTING WITH A=0. EXAMPLE: A=0, C=2, Z=25
-  var serial = row[0][8];
-  var homeroom = row[0][6];
-  //END
+ 
+  var serial = row[0][serialColumn];
+  var homeroom = row[0][homeroomColumn];
   
     Logger.log('Serial: ' + serial);
   Logger.log('Row: ' + row); 
-  var info = ui.prompt('Verify:', 'Is ' + serial + ' the serial number? Enter \'y,\' if so or \'n\' if not. Is the charger present? Enter \'y,\' if so or \'n\' if not. Now, if there are any problems with the device, enter them and press OK. (their homeroom is ' + homeroom + ')', ui.ButtonSet.OK).getResponseText(); //prompt
-  if (info.getSelectedButton() == ui.Button.CANCEL || info.getSelectedButton == ui.Button.CLOSE) return; // stop if cancelled
-  info = info.split(','); //split response by comma
-  Logger.log(info);
-  if (info[0] == 'n') { //check answers
-    var serialMatch = false;
-  } else {
-    var serialMatch = true;
-  }
-  if (info[1] == 'n') { //check answers
-    var charger = 'No';
-  } else {
-    var charger = 'Yes';
-  }
-  if (info[2]) { //check answers
-    if (serialMatch == false) {
-      var notes = 'Serial does not match; ' + info[3];
+  if (simple == false) {
+    var info = ui.prompt('Verify:', 'Is ' + serial + ' the serial number? Enter \'y,\' if so or \'n\' if not. Is the charger present? Enter \'y,\' if so or \'n\' if not. Now, if there are any problems with the device, enter them and press OK. (their @dtech is ' + homeroom + ')', ui.ButtonSet.OK); //prompt
+    if (info.getSelectedButton() == ui.Button.CANCEL || info.getSelectedButton() == ui.Button.CLOSE) return; // stop if cancelled
+    info = info.getResponseText();
+    info = info.split(','); //split response by comma
+    Logger.log(info);
+    if (info[0] == 'n') { //check answers
+      var serialMatch = false;
     } else {
-      var notes = info[2];
+      var serialMatch = true;
     }
-  } else {
-    if (serialMatch == false) { 
-      var notes = 'Serial does not match;'
+    if (info[1] == 'n') { //check answers
+      var charger = 'No';
     } else {
-      var notes = ' ';
+      var charger = 'Yes';
+    }
+    if (info[2]) { //check answers
+      if (serialMatch == false) {
+        var notes = 'Serial does not match; ' + info[2];
+      } else {
+        var notes = info[2];
       }
+    } else {
+      if (serialMatch == false) { 
+        var notes = 'Serial does not match;'
+        } else {
+          var notes = ' ';
+        }
+    }
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(printColumns[0] + i + ':' + printColumns[1] + i).setValues([['Yes', charger, notes]]); //final print
+  } else {
+    var serialMatch = function(serial) {
+      switch (SpreadsheetApp.getUi().alert('Verify:', 'Is ' + serial + ' the serial number?', SpreadsheetApp.getUi().ButtonSet.YES_NO)) {
+        case SpreadsheetApp.getUi().Button.YES:
+          return true;
+        case SpreadsheetApp.getUi().Button.NO: 
+          return false;
+                                                                                                                                      }
+    }
+      var charger = function() {
+        switch (SpreadsheetApp.getUi().alert('Verify:', 'Is the charger present?', SpreadsheetApp.getUi().ButtonSet.YES_NO)) {
+          case SpreadsheetApp.getUi().Button.YES:
+            return 'Yes';
+          case SpreadsheetApp.getUi().Button.NO: 
+            return 'No';
+        }
+      }
+      var notes = function(serial) {
+        var prompt = SpreadsheetApp.getUi().prompt('Verify:', 'Any notes? A note could include the condition of the device, etc.', SpreadsheetApp.getUi().ButtonSet.YES_NO);
+        switch (prompt.getSelectedButton()) {
+          case SpreadsheetApp.getUi().Button.YES:
+            if (serialMatch(serial) == true) {
+              return prompt.getResponseText();
+            } else {
+              return 'Serial does not match; ' + prompt.getResponseText();
+            }
+            return prompt.getResponseText();
+          case SpreadsheetApp.getUi().Button.NO: 
+            if (serialMatch(serial) == true) {
+              return ''
+            } else {
+              return 'Serial does not match;'
+            }
+        }
+    }
+    //Logger.log(serialMatch(serial));
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(printColumns[0] + i + ':' + printColumns[1] + i).setValues([['Yes', charger(), notes(serial)]]); //final print
   }
-  
   //charger, notes[serial matches/serial doesn't match; notes they typed in]
   
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Printed List').getRange('C' + i + ':E' + i).setValues([['Yes', charger, notes]]); //final print
+  
   
   if (repeat == true) checkIn();
 }
